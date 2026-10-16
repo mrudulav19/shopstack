@@ -97,6 +97,78 @@ def display_cart(products, cart):
     print(f"\nGrand total: ₹{grand_total:.2f}")
 
 
+def checkout(products, cart):
+    if not cart:
+        print("Your cart is empty!")
+        return
+
+    # Validate all items before changing any stock
+    for item in cart:
+        product = next(
+            (
+                p for p in products
+                if p["id"] == item["product_id"]
+            ),
+            None
+        )
+
+        if product is None:
+            print("A product in your cart no longer exists.")
+            return
+
+        if item["quantity"] > product["stock"]:
+            print(f"Not enough stock for {product['name']}!")
+            return
+
+    # Calculate total and prepare order details
+    grand_total = 0
+    order_items = []
+
+    for item in cart:
+        product = next(
+            p for p in products
+            if p["id"] == item["product_id"]
+        )
+
+        subtotal = product["price"] * item["quantity"]
+        grand_total += subtotal
+
+        order_items.append({
+            "product_id": product["id"],
+            "name": product["name"],
+            "price": product["price"],
+            "quantity": item["quantity"],
+            "subtotal": round(subtotal, 2)
+        })
+
+    print("\n========== ORDER SUMMARY ==========")
+
+    for item in order_items:
+        print(
+            f"{item['name']} x {item['quantity']} "
+            f"= ₹{item['subtotal']:.2f}"
+        )
+
+    print(f"Total: ₹{grand_total:.2f}")
+
+    confirmation = input("Confirm order? (yes/no): ").strip().lower()
+
+    if confirmation != "yes":
+        print("Checkout cancelled. Your cart is unchanged.")
+        return
+
+    # Deduct stock only after confirmation
+    for item in cart:
+        product = next(
+            p for p in products
+            if p["id"] == item["product_id"]
+        )
+        product["stock"] -= item["quantity"]
+
+    cart.clear()
+    print("Order placed successfully!")
+    print(f"Amount paid: ₹{grand_total:.2f}")
+
 
 def main():
     products = load_products()
@@ -108,6 +180,7 @@ def main():
         print("2. Add to cart")
         print("3. View cart")
         print("4. Exit")
+        print("5. Checkout")
 
         choice = input("Choose an option: ")
 
@@ -127,8 +200,11 @@ def main():
             print("Thanks for shopping with ShopStack!")
             break
 
+        elif choice == "5":
+            checkout(products, cart)
+
         else:
-            print("Invalid option. Please choose 1–4.")
+            print("Invalid option. Please choose 1–5.")
 
 
 if __name__ == "__main__":
