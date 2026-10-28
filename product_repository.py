@@ -2,9 +2,10 @@
 from db import get_connection
 
 
+
 def get_products():
     query = """
-        SELECT id, name, price, stock
+        SELECT id, name, price, stock, image_url
         FROM products
         ORDER BY id
     """
@@ -22,10 +23,12 @@ def get_products():
             "name": row[1],
             "price": float(row[2]),
             "stock": row[3],
+            "image_url": row[4],
         }
         products.append(product)
 
     return products
+
 
 def create_product(product_id, name, price, stock):
     query = """
@@ -63,6 +66,33 @@ def update_product(product_id, price, stock):
             cursor.execute(
                 query,
                 (price, stock, product_id),
+            )
+            row = cursor.fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row[0],
+        "name": row[1],
+        "price": float(row[2]),
+        "stock": row[3],
+    }
+
+def reduce_stock(product_id, quantity=1):
+    query = """
+        UPDATE products
+        SET stock = stock - %s
+        WHERE id = %s
+          AND stock >= %s
+        RETURNING id, name, price, stock
+    """
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                query,
+                (quantity, product_id, quantity),
             )
             row = cursor.fetchone()
 

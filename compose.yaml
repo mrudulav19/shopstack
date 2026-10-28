@@ -1,3 +1,4 @@
+
 services:
   db:
     image: postgres:18
@@ -28,6 +29,27 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: shopstack_restore
+    depends_on:
+      db:
+        condition: service_healthy
+
+  cart:
+    image: python:3.11-slim
+    container_name: shopstack-cart
+    working_dir: /app
+    volumes:
+      - ./cart_service:/app
+      - ./db.py:/app/db.py:ro
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && python -m uvicorn app:app --host 0.0.0.0 --port 8001"
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: shopstack_restore
+      PRODUCT_API: http://api:8000
     depends_on:
       db:
         condition: service_healthy
